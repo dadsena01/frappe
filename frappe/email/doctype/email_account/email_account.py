@@ -193,7 +193,7 @@ class EmailAccount(Document):
 			if self.use_imap and not self.imap_folder:
 				frappe.throw(_("You need to set one IMAP folder for {0}").format(frappe.bold(self.email_id)))
 
-			valid_doctypes = {d[0] for d in get_append_to()}
+			valid_doctypes = get_email_append_to_doctypes()
 			for append_to in [self.append_to, *(folder.append_to for folder in self.imap_folder)]:
 				if append_to and append_to not in valid_doctypes:
 					frappe.throw(_("Append To can be one of {0}").format(comma_or(valid_doctypes)))
@@ -966,8 +966,12 @@ def get_append_to(
 	page_len: int | None = None,
 	filters: list | dict | str | None = None,
 ):
+	frappe.has_permission("Email Account", "read", throw=True)
 	txt = txt if txt else ""
+	return [[d] for d in get_email_append_to_doctypes() if txt in d]
 
+
+def get_email_append_to_doctypes() -> set[str]:
 	filters = {"istable": 0, "issingle": 0, "email_append_to": 1}
 	# Set Email Append To DocTypes via DocType
 	email_append_to_list = [
@@ -976,13 +980,13 @@ def get_append_to(
 	# Set Email Append To DocTypes set via Customize Form
 	email_append_to_list.extend(
 		dt.doc_type
-		for dt in frappe.get_list(
+		for dt in frappe.get_all(
 			"Property Setter",
 			filters={"property": "email_append_to", "value": 1},
 			fields=["doc_type"],
 		)
 	)
-	return [[d] for d in set(email_append_to_list) if txt in d]
+	return set(email_append_to_list)
 
 
 def notify_unreplied():

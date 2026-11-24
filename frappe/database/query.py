@@ -1193,6 +1193,16 @@ class Engine:
 				title=_("Invalid Field"),
 			)
 
+		docfield = meta.get_field(fieldname)
+		if docfield and docfield.fieldtype in frappe.model.table_fields:
+			frappe.throw(
+				_("{0} is a table field. Use a field of {1} instead.").format(
+					frappe.bold(f"{doctype}.{fieldname}"), frappe.bold(docfield.options)
+				),
+				frappe.ValidationError,
+				title=_("Invalid Field"),
+			)
+
 		# Don't allow querying child table fields if user has only "select" permission
 		permission_type = self.get_permission_type(doctype, parent_doctype)
 		if parent_doctype and permission_type == "select":
